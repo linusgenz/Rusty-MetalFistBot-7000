@@ -1,0 +1,14 @@
+pub mod dick_size;
+pub mod leave;
+pub mod neko;
+pub mod nowplaying;
+pub mod pause;
+pub mod ping;
+pub mod play;
+pub mod queue;
+pub mod rand_quote;
+pub mod resume;
+pub mod roast;
+pub mod serverinfo;
+pub mod skip;
+pub mod bass_boost;
