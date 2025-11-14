@@ -1,14 +1,19 @@
-use crate::discord_voice_api::voice::player::Track;
 use crate::BotData;
+use crate::discord_voice_api::voice::player::Track;
 use anyhow::Result;
 use serde_json::Value;
 use serenity::all::{
-    ChannelId, CommandInteraction, CommandOptionType, Context, CreateCommandOption, GuildId, ResolvedValue,
+    ChannelId, CommandInteraction, CommandOptionType, Context, CreateCommandOption, GuildId,
+    ResolvedValue,
 };
 use serenity::builder::CreateCommand;
 use serenity::futures::StreamExt;
 use serenity::model::application::ResolvedOption;
 use tokio::process::Command;
+
+fn is_playlist_url(url: &str) -> bool {
+    url.contains("list=")
+}
 
 pub async fn fetch_youtube_metadata(video_url: &str) -> Result<Track> {
     let output = Command::new("yt-dlp")
@@ -87,8 +92,6 @@ pub async fn run(
         None => "Failed to parse url",
     };
 
-    let meta = fetch_youtube_metadata(url).await.unwrap();
-
     let data_read = ctx.data.read().await;
     let voice_api = data_read
         .get::<BotData>()
@@ -105,11 +108,56 @@ pub async fn run(
         .await
         .expect("Could not connect to voice");
 
-    let title = meta.title.clone();
+    let result_msg: String;
 
-    player.enqueue(meta).await;
+    if is_playlist_url(url) {
+        match get_playlist_entries(url).await {
+            Ok(entries) => {
+                use futures::stream::{FuturesUnordered, StreamExt};
 
-    format!("Added **{}** to queue", title).to_string()
+                let mut futures = FuturesUnordered::new();
+
+                for (index, url) in entries.iter().enumerate() {
+                    futures.push(async move {
+                        let meta = fetch_youtube_metadata(&url).await;
+                        (index, meta)
+                    });
+                }
+
+                let mut results: Vec<(usize, Result<Track, _>)> = Vec::new();
+
+                while let Some(r) = futures.next().await {
+                    results.push(r);
+                }
+
+                results.sort_by_key(|(index, _)| *index);
+
+                let mut count = 0;
+
+                for (_, res) in results {
+                    if let Ok(meta) = res {
+                        let player_clone = player.clone();
+                        player_clone.enqueue(meta).await;
+                        count += 1;
+                    }
+                }
+
+                result_msg = format!("Added {} tracks to queue", count);
+            }
+            Err(e) => {
+                return format!("Konnte Playlist nicht laden: {}", e);
+            }
+        }
+    } else {
+        let meta = fetch_youtube_metadata(url).await.unwrap();
+        let title = meta.title.clone();
+
+        player.enqueue(meta).await;
+
+        result_msg = format!("Added **{}** to queue", title);
+    }
+
+    result_msg
 }
 
 async fn get_playlist_entries(url: &str) -> Result<Vec<String>, String> {

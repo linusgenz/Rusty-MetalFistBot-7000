@@ -9,9 +9,10 @@ use tokio::net::UdpSocket;
 use tokio::time::sleep;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite::Message};
 use url::Url;
-
+use crate::discord_voice_api::gateway::Gateway;
 use crate::discord_voice_api::udp::{handshake, setup};
 use crate::discord_voice_api::voice::crypto::CipherMode;
+use crate::discord_voice_api::voice::player::AudioPlayer;
 
 #[derive(Clone)]
 pub struct VoiceConnection {

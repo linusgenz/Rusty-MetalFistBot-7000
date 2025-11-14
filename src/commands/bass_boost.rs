@@ -1,5 +1,5 @@
 use crate::BotData;
-use crate::discord_voice_api::voice::filters::AudioCommand;
+use crate::discord_voice_api::voice::audio_commands::AudioCommand;
 use serenity::all::{CommandInteraction, Context, CreateEmbed};
 use serenity::builder::CreateCommand;
 use std::error::Error;

@@ -24,6 +24,7 @@ augmented-dsp-filters = "2.5.0"
 audio-processor-traits = "4.3.0"
 url = "2.5.7"
 socket2 = "0.6.1"
+futures = "0.3.31"
 
 [profile.dev]
 incremental = true

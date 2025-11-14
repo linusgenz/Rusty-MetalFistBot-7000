@@ -1,6 +1,6 @@
 use crate::discord_voice_api::udp::send_packet::send_voice_packet;
 use crate::discord_voice_api::voice::connection::VoiceConnection;
-use crate::discord_voice_api::voice::filters::{
+use crate::discord_voice_api::voice::audio_commands::{
     AudioCommand, SharedAudioFilterState, SharedAudioFilters,
 };
 use crate::discord_voice_api::voice::player::AudioFrame;
@@ -19,7 +19,7 @@ pub async fn audio_consumer(
     mut cmd_rx: mpsc::Receiver<AudioCommand>,
     filter_state: SharedAudioFilterState,
     filters: SharedAudioFilters,
-) -> Result<(), anyhow::Error> {
+) -> Result<mpsc::Receiver<AudioCommand>, anyhow::Error> {
     let mut encoder = Encoder::new(48000, Channels::Stereo, Application::Audio)?;
     let mut tick = tokio::time::interval(Duration::from_millis(20));
     tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -51,6 +51,7 @@ pub async fn audio_consumer(
                     state.volume = vol;
                     println!("[FILTER] Volume = {:.2}", vol);
                 }
+                _ => {}
             }
         }
 
@@ -73,5 +74,5 @@ pub async fn audio_consumer(
     ts.store(ts_val, Ordering::Relaxed);
     println!("[CONSUMER] Finished");
 
-    Ok(())
+    Ok((cmd_rx))
 }

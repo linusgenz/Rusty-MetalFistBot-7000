@@ -28,6 +28,10 @@ pub enum AudioCommand {
     ToggleNightcore(bool),
     ToggleVaporwave(bool),
     SetVolume(f32),
+
+    Pause,
+    Resume,
+    Skip
 }
 
 pub type SharedAudioFilterState = Arc<RwLock<AudioFilterState>>;
@@ -76,7 +80,7 @@ impl AudioFilters {
             low_shelf,
             mid_band,
             context,
-            compressor: Compressor::new(sample_rate, -10.0, 3.0, 0.005, 0.05),
+            compressor: Compressor::new(sample_rate, -5.0, 3.0, 0.005, 0.05),
         }
     }
 
@@ -89,7 +93,6 @@ impl AudioFilters {
         let mut buffer = AudioBuffer::<f32>::empty();
         buffer.resize(channels, num_samples);
 
-
         for ch in 0..channels {
             for n in 0..num_samples {
                 let idx = n * channels + ch;
@@ -97,11 +100,9 @@ impl AudioFilters {
             }
         }
 
-
         self.low_shelf.process(&mut self.context, &mut buffer);
         self.mid_band.process(&mut self.context, &mut buffer);
 
-        // Kompressor
         for ch in 0..channels {
             for n in 0..num_samples {
                 let s = buffer.get(ch, n);

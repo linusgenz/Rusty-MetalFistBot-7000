@@ -48,9 +48,9 @@ impl TypeMapKey for QuoteData {
     type Value = Vec<Quote>;
 }
 
+const QUOTES_JSON: &str = include_str!("../data/quotes.json");
 pub async fn load_quotes(ctx: &Context) -> Result<(), Box<dyn std::error::Error>> {
-    let data = fs::read_to_string("data/quotes.json")?;
-    let quotes: Vec<Quote> = serde_json::from_str(&data)?;
+    let quotes: Vec<Quote> = serde_json::from_str(QUOTES_JSON)?;
 
     let mut data_write = ctx.data.write().await;
     data_write.insert::<QuoteData>(quotes);
@@ -115,17 +115,17 @@ impl EventHandler for Handler {
                 "play" => Some(CommandResponse::Text(
                     commands::play::run(&ctx, &command, &command.data.options()).await,
                 )),
-                "skip" => Some(CommandResponse::Text(
-                    commands::skip::run(&ctx, &command, &command.data.options()).await,
+                "skip" => Some(CommandResponse::Embed(
+                    commands::skip::run(&ctx, &command).await,
                 )),
                 "leave" => Some(CommandResponse::Text(
                     commands::leave::run(&ctx, &command, &command.data.options()).await,
                 )),
-                "resume" => Some(CommandResponse::Text(
-                    commands::resume::run(&ctx, &command, &command.data.options()).await,
+                "resume" => Some(CommandResponse::Embed(
+                    commands::resume::run(&ctx, &command).await,
                 )),
-                "pause" => Some(CommandResponse::Text(
-                    commands::pause::run(&ctx, &command, &command.data.options()).await,
+                "pause" => Some(CommandResponse::Embed(
+                    commands::pause::run(&ctx, &command).await,
                 )),
                 "queue" => Some(CommandResponse::Embed(
                     commands::queue::run(&ctx, &command).await,

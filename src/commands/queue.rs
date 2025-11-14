@@ -34,8 +34,8 @@ pub async fn run(ctx: &Context, command: &CommandInteraction) -> CreateEmbed {
     let mut desc = String::new();
     for (i, track) in queue.iter().await.into_iter().take(20).enumerate() {
         let title = &track.title;
-        let url = track.url.as_deref().unwrap_or("unknown");
-        desc.push_str(&format!("**{}.** [{}]({})\n", i + 1, title, url));
+        let id = track.id;
+        desc.push_str(&format!("**{}.** [{}](https://www.youtube.com/watch?v={})\n", i + 1, title, id));
     }
 
     let bot_avatar = bot_user.map(|b| b.bot_pfp_url.clone()).unwrap_or_default();

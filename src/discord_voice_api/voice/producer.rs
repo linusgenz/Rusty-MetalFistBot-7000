@@ -7,15 +7,18 @@ use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc;
 use tokio::time::Duration;
+use crate::discord_voice_api::voice::audio_commands::AudioCommand;
 
 pub async fn audio_producer(
     queue: Arc<TrackQueue>,
     tx: mpsc::Sender<AudioFrame>,
-) -> Result<()> {
+    mut playback_cmd_rx: mpsc::Receiver<AudioCommand>
+) -> Result<(mpsc::Receiver<AudioCommand>)> {
     let mut current_proc: Option<tokio::process::Child> = None;
     let mut current_out: Option<tokio::process::ChildStdout> = None;
     let mut current_track: Option<Track> = None;
     let mut played_seconds: f64 = 0.0;
+    let mut paused = false;
 
     struct CrossfadeState {
         proc: Option<tokio::process::Child>,
@@ -41,6 +44,34 @@ pub async fn audio_producer(
     }
 
     loop {
+        while let Ok(cmd) = playback_cmd_rx.try_recv() {
+            match cmd {
+                AudioCommand::Pause => {
+                    paused = true;
+                    println!("[PRODUCER] ⏸ Paused");
+                }
+                AudioCommand::Resume => {
+                    paused = false;
+                    println!("[PRODUCER] ▶ Resumed");
+                }
+                AudioCommand::Skip => {
+                    println!("[PRODUCER] ⏭ Skipping track");
+                    if let Some(mut proc) = current_proc.take() {
+                        let _ = proc.kill().await;
+                    }
+                    current_out = None;
+                    current_track = None;
+                    continue;
+                }
+                _ => {}
+            }
+        }
+
+        if paused {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            continue;
+        }
+
         if current_out.is_none() {
             played_seconds = 0.0;
             if let Some(track) = queue.pop().await {
@@ -157,5 +188,5 @@ pub async fn audio_producer(
         }
     }
 
-    Ok(())
+    Ok((playback_cmd_rx))
 }

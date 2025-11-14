@@ -4,6 +4,6 @@ pub mod crypto;
 mod ffmpeg;
 pub mod player;
 mod producer;
-pub mod filters;
+pub mod audio_commands;
 
 pub use connection::VoiceConnection;

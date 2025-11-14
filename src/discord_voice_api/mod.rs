@@ -40,12 +40,15 @@ impl DiscordVoiceApi {
             return Ok(player);
         }
 
-        let mut gateway = Gateway::connect().await?;
+        let mut res = Gateway::connect().await?;
+        
+        let mut gateway = res.0;
+        let event_rx = res.1;
 
         gateway.start(token).await?;
 
-        let user_id = gateway
-            .wait_until_ready()
+        let (event_rx, user_id) = gateway
+            .wait_until_ready(event_rx)
             .await
             .ok_or_else(|| anyhow::anyhow!("No READY event received"))?;
 
@@ -61,7 +64,7 @@ impl DiscordVoiceApi {
         gateway.send_json(&join_payload).await?;
         println!("🎤 Sent Voice State Update (JOIN)");
 
-        let (session_id, voice_token, endpoint) = gateway.wait_for_voice_info(guild_id).await?;
+        let (session_id, voice_token, endpoint) = gateway.wait_for_voice_info(guild_id, event_rx).await?;
         println!("✅ Got Voice Info — endpoint: {}", endpoint);
 
         let voice_conn =
